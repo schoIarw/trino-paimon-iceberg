@@ -60,7 +60,11 @@ def main():
     with zipfile.ZipFile(d/'trino-blob-cache-alluxio.zip') as z:
         if any('..' in Path(n).parts or n.startswith('/') for n in z.namelist()):raise RuntimeError('Unsafe cache ZIP')
         z.extractall(work/'alluxio')
-    shutil.copytree(work/'alluxio/trino-blob-cache-alluxio-484',root/'opt/trino/plugin/trino-blob-cache-alluxio')
+    cache_dir=root/'opt/trino/plugin/blob-cache-alluxio'
+    if not cache_dir.exists():
+        shutil.copytree(work/'alluxio/trino-blob-cache-alluxio-484',cache_dir)
+    if not (cache_dir/'trino-blob-cache-alluxio-484.jar').is_file():
+        raise RuntimeError('Alluxio cache plugin JAR missing')
     with zipfile.ZipFile(d/'trino-iceberg.zip') as z:
         if any('..' in Path(n).parts or n.startswith('/') for n in z.namelist()):raise RuntimeError('Unsafe Iceberg ZIP')
         z.extractall(work/'iceberg')

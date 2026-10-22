@@ -25,7 +25,7 @@ with tarfile.open(image, 'r:gz') as archive:
             required = {
                 'opt/trino/plugin/paimon/paimon-trino-484-2.1.0.jar',
                 'opt/trino/plugin/iceberg/trino-iceberg-484.jar',
-                'opt/trino/plugin/trino-blob-cache-alluxio/trino-blob-cache-alluxio-484.jar',
+                'opt/trino/plugin/blob-cache-alluxio/trino-blob-cache-alluxio-484.jar',
                 'etc/trino/catalog/paimon.properties',
                 'etc/trino/catalog/iceberg.properties',
                 'etc/trino/cache-manager-alluxio.properties',
