@@ -1,0 +1,29 @@
+{
+  "base_image": "ubuntu@sha256:722ea796ac2d57eeb3627c58a582fc1acc58be51faf815e1bce1682ae5c092f7",
+  "artifacts": {
+    "jdk-arm64.tar.gz": {
+      "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4%2B7/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.4_7.tar.gz",
+      "sha256": "621f7196f0b682fb557da58bec89bd7dfe5419811fe1c0ba75c9cc8432f084c7"
+    },
+    "trino-core.tar.gz": {
+      "url": "https://github.com/trinodb/trino/releases/download/484/trino-server-core-484.tar.gz",
+      "sha256": "fa6773d94c3943eebf3c07859d544b3420d32ea0a01991b803addd0244aff2c8"
+    },
+    "trino-jmx.zip": {
+      "url": "https://github.com/trinodb/trino/releases/download/484/trino-jmx-484.zip",
+      "sha256": "807fa774bd7529c10d0d1bac7f7de33c63407bb1a11301a61fbb1344a0fe6645"
+    },
+    "trino-cli.jar": {
+      "url": "https://github.com/trinodb/trino/releases/download/484/trino-cli-484",
+      "sha256": "9a4dc15cf68af58e05165cbf0b5de20fbeb8af0f5280cb43568ac9001aef9b4e"
+    },
+    "trino-blob-cache-alluxio.zip": {
+      "url": "https://github.com/trinodb/trino/releases/download/484/trino-blob-cache-alluxio-484.zip",
+      "sha256": "c2c7fd2b0414b3cd87d495f8b26397cdfa46a919283ea2d844ecaacbe39b6b9f"
+    },
+    "trino-iceberg.zip": {
+      "url": "https://github.com/trinodb/trino/releases/download/484/trino-iceberg-484.zip",
+      "sha256": "eba73e90f063cd4cdc376af1f517e3314b568b250561ab51e817bd342497639a"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+name: ARM64 build and smoke test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25.0.4'
+          cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: bash scripts/build-connector.sh
+      - name: Pull locked base and package
+        run: |
+          mkdir -p build/downloads
+          BASE_IMAGE=$(python -c 'import json; print(json.load(open("artifacts.lock.json"))["base_image"])')
+          docker pull --platform linux/arm64 "$BASE_IMAGE"
+          docker save -o build/downloads/ubuntu-arm64.tar "$BASE_IMAGE"
+          python scripts/package-image.py
+      - name: Docker load and ARM64 smoke test
+        run: |
+          docker load -i dist/trino-paimon-iceberg-0.3.0-arm64.docker.tar.gz
+          python tests/smoke-docker.py
+          python tests/verify-image.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-trino-cache-arm64
+          path: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
+            dist/IMAGE_ID
+          compression-level: 0
+      - name: Source package
+        run: |
+          mkdir -p build/source/trino-paimon-iceberg/media
+          git archive HEAD | tar -x -C build/source/trino-paimon-iceberg
+          git bundle create build/source/trino-paimon-iceberg/repository.bundle --all
+          cp dist/SHA256SUMS dist/IMAGE_ID build/source/trino-paimon-iceberg/media/
+          tar -czf dist/trino-paimon-iceberg-0.3.0-source.tar.gz -C build/source trino-paimon-iceberg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-trino-cache-source
+          path: dist/trino-paimon-iceberg-0.3.0-source.tar.gz
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ai-trino-cache-*
+          merge-multiple: true
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create v0.3.0 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "v0.3.0 Trino 484 + Paimon 2.1 + Iceberg" --generate-notes

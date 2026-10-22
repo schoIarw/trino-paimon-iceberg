@@ -1,0 +1,11 @@
+vendor/target/
+vendor/dependency-reduced-pom.xml
+/build/
+/dist/
+/media/
+/etc/
+/deploy.env
+/minio.env
+*.log
+__pycache__/
+/repository.bundle
