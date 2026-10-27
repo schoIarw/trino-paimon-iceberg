@@ -109,7 +109,7 @@ local-cache.max-size=64 mb
 local-cache.block-size=64 kb
 local-cache.whitelist=meta,global-index,data,bucket-index,file-index
 ''')
-    (etc/'catalog/iceberg.properties').write_text('connector.name=iceberg\niceberg.catalog.type=hive_metastore\nhive.metastore.uri=thrift://127.0.0.1:19083\nfs.s3.enabled=true\nfs.cache.enabled=false\n')
+    (etc/'catalog/iceberg.properties').write_text('connector.name=iceberg\niceberg.catalog.type=hive_metastore\nhive.metastore.uri=thrift://127.0.0.1:19083\nfs.s3.enabled=true\ns3.endpoint=http://127.0.0.1:19001\ns3.region=us-east-1\ns3.path-style-access=true\ns3.aws-access-key=cachetest\ns3.aws-secret-key=cachetest-secret\nfs.cache.enabled=false\n')
     docker('run', '-d', '--name', NAME, '--memory', '6g', '--network', 'host',
            '-v', str(etc) + ':/etc/trino:ro', '-v', str(WORK/'cache') + ':/data/cache', IMAGE)
     containers.append(NAME)
