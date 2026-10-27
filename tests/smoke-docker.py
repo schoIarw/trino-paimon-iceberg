@@ -20,7 +20,7 @@ from botocore.config import Config
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE = 'trino-paimon-iceberg:0.4.0-native-arm64'
-MINIO_IMAGE = os.environ.get('MINIO_TEST_IMAGE', 'minio/minio:RELEASE.2025-04-22T22-12-26Z')
+MINIO_IMAGE = os.environ.get('MINIO_TEST_IMAGE', 'quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z')
 WORK = Path(tempfile.mkdtemp(prefix='paimon-native-smoke-'))
 WORK.chmod(0o777)
 NAME = 'native-cache-' + WORK.name
@@ -126,9 +126,10 @@ local-cache.whitelist=meta,global-index,data,bucket-index,file-index
 
 def measure(table, phase):
     before = counts.copy()
+    started = time.perf_counter()
     result = query(f'SELECT count(*), sum(id), sum(length(payload)) FROM paimon.cachetest.{table}')
     after = counts.copy()
-    item = dict(table=table, phase=phase, result=result,
+    item = dict(table=table, phase=phase, result=result, elapsed_seconds=round(time.perf_counter()-started, 4),
                 **{k: after[k]-before[k] for k in before})
     report['cases'].append(item)
     print(json.dumps(item), flush=True)

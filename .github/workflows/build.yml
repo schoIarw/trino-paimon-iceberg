@@ -46,7 +46,8 @@ jobs:
           cp docs/TEST-VALIDATION.md dist/
           cp vendor/target/paimon-trino-484-2.1.0-tests.jar dist/
           cd dist
-          sha256sum *.tar.gz *.md *.json IMAGE_ID > SHA256SUMS
+          rm -f ROOTFS_PATH
+          sha256sum *.tar.gz *.md *.json *.jar IMAGE_ID > SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:

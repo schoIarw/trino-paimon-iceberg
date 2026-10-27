@@ -20,7 +20,7 @@ pip3 install boto3==1.40.51
 mkdir -p media
 cp /path/to/paimon-trino-484-2.1.0-tests.jar media/
 docker load -i /path/to/trino-paimon-iceberg-0.4.0-native-arm64.docker.tar.gz
-docker pull minio/minio:RELEASE.2025-04-22T22-12-26Z
+docker pull quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
 python3 tests/smoke-docker.py
 cat dist/native-cache-validation.json
 ```
