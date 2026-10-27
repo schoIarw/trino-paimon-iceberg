@@ -141,12 +141,8 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         Optional<Predicate> paimonFilter = new TrinoFilterConverter(rowType).convert(filter);
         // Do not bypass Paimon's CachingFileIO through Trino's ORC raw reader.
         // Keep this path identical when the cache is disabled for fair A/B tests.
-        try {
-            return createLegacyPageSource(table, paimonFilter, fieldNames, projectedFields,
-                    split.decodeSplit(), columns, limit);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return createLegacyPageSource(table, paimonFilter, fieldNames, projectedFields,
+                split.decodeSplit(), columns, limit);
     }
 
     private ConnectorPageSource createLegacyPageSource(
