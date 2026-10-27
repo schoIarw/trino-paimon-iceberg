@@ -35,6 +35,7 @@ jobs:
       - name: Real MinIO SQL cold/hot/concurrency/snapshot/restart validation
         run: |
           pip install boto3==1.40.51
+          bash tests/prepare-minio.sh
           python tests/smoke-docker.py
       - name: Source and deployment manual
         run: |

@@ -20,12 +20,12 @@ pip3 install boto3==1.40.51
 mkdir -p media
 cp /path/to/paimon-trino-484-2.1.0-tests.jar media/
 docker load -i /path/to/trino-paimon-iceberg-0.4.0-native-arm64.docker.tar.gz
-docker pull quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+bash tests/prepare-minio.sh
 python3 tests/smoke-docker.py
 cat dist/native-cache-validation.json
 ```
 
-离线机还需事先准备Python/boto3依赖及测试用MinIO镜像，联网ARM64机器使用docker save导出MinIO镜像后目标机docker load。测试MinIO镜像不是生产部署依赖，安装Trino镜像无需它。可用MINIO_TEST_IMAGE环境变量指定已导入的等价测试镜像标签，版本变化须记录。
+测试镜像由tests/prepare-minio.sh从官方GitHub发布的ARM64二进制构建，固定SHA256为6c2f3142c94240206123177f4ba1e360daa5d1e0a4962e90757ef4f92c3ab57c，不依赖已不可访问的公开MinIO容器仓库。离线机还需事先准备Python/boto3依赖；在联网ARM64机器先执行prepare-minio.sh，再用docker save导出paimon-native-test-minio:2025-04-22，离线目标机docker load。测试MinIO镜像不是生产部署依赖，安装Trino镜像无需它。可用MINIO_TEST_IMAGE环境变量指定已导入的等价测试镜像标签，版本变化须记录。
 
 失败时脚本输出临时目录、容器日志和JSON；finally清理自己的测试容器，不删除生产资源。读取测试报告status必须passed，不能只看JSON文件存在。
 

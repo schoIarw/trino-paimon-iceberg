@@ -20,12 +20,12 @@ from botocore.config import Config
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE = 'trino-paimon-iceberg:0.4.0-native-arm64'
-MINIO_IMAGE = os.environ.get('MINIO_TEST_IMAGE', 'quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z')
+MINIO_IMAGE = os.environ.get('MINIO_TEST_IMAGE', 'paimon-native-test-minio:2025-04-22')
 WORK = Path(tempfile.mkdtemp(prefix='paimon-native-smoke-'))
 WORK.chmod(0o777)
 NAME = 'native-cache-' + WORK.name
 containers = []
-report = {'image': IMAGE, 'cases': []}
+report = {'image': IMAGE, 'minio_image': MINIO_IMAGE, 'cases': []}
 counts = {'data_gets': 0, 'data_bytes': 0}
 lock = threading.Lock()
 
