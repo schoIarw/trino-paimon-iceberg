@@ -1,7 +1,7 @@
-name: ARM64 build and smoke test
+name: Paimon native cache ARM64 image and MinIO validation
 on:
   push:
-    branches: [main]
+    branches: [feature/paimon-native-local-cache]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -23,39 +23,38 @@ jobs:
         with:
           python-version: '3.12'
       - run: bash scripts/build-connector.sh
-      - name: Pull locked base and package
+      - name: Package native-cache ARM64 image
         run: |
           mkdir -p build/downloads
           BASE_IMAGE=$(python -c 'import json; print(json.load(open("artifacts.lock.json"))["base_image"])')
           docker pull --platform linux/arm64 "$BASE_IMAGE"
           docker save -o build/downloads/ubuntu-arm64.tar "$BASE_IMAGE"
           python scripts/package-image.py
-      - name: Docker load and ARM64 smoke test
-        run: |
-          docker load -i dist/trino-paimon-iceberg-0.3.0-arm64.docker.tar.gz
-          python tests/smoke-docker.py
+          docker load -i dist/trino-paimon-iceberg-0.4.0-native-arm64.docker.tar.gz
           python tests/verify-image.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ai-trino-cache-arm64
-          path: |
-            dist/*.tar.gz
-            dist/SHA256SUMS
-            dist/IMAGE_ID
-          compression-level: 0
-      - name: Source package
+      - name: Real MinIO SQL cold/hot/concurrency/snapshot/restart validation
+        run: |
+          pip install boto3==1.40.51
+          python tests/smoke-docker.py
+      - name: Source and deployment manual
         run: |
           mkdir -p build/source/trino-paimon-iceberg/media
           git archive HEAD | tar -x -C build/source/trino-paimon-iceberg
-          git bundle create build/source/trino-paimon-iceberg/repository.bundle --all
           cp dist/SHA256SUMS dist/IMAGE_ID build/source/trino-paimon-iceberg/media/
-          tar -czf dist/trino-paimon-iceberg-0.3.0-source.tar.gz -C build/source trino-paimon-iceberg
+          tar -czf dist/trino-paimon-iceberg-0.4.0-native-source.tar.gz -C build/source trino-paimon-iceberg
+          cp docs/NATIVE-CACHE-DOCKER.md dist/
+          cp docs/TEST-VALIDATION.md dist/
+          cp vendor/target/paimon-trino-484-2.1.0-tests.jar dist/
+          cd dist
+          sha256sum *.tar.gz *.md *.json IMAGE_ID > SHA256SUMS
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: ai-trino-cache-source
-          path: dist/trino-paimon-iceberg-0.3.0-source.tar.gz
+          name: paimon-native-cache-arm64
+          path: dist/*
+          compression-level: 0
   release:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/feature/paimon-native-local-cache' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -63,9 +62,10 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: ai-trino-cache-*
-          merge-multiple: true
-          path: dist
-      - env:
+          name: paimon-native-cache-arm64
+          path: artifacts
+      - name: Publish isolated native-cache prerelease
+        env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create v0.3.0 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "v0.3.0 Trino 484 + Paimon 2.1 + Iceberg" --generate-notes
+        run: |
+          gh release create v0.4.0-native artifacts/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "v0.4.0-native Paimon local cache ARM64" --notes "Isolated native-cache branch. Includes ARM64 Docker image, source, step-by-step manual, and real MinIO validation report. Paimon uses native local cache; Iceberg is retained without file caching."

@@ -45,7 +45,11 @@ import static java.util.Objects.requireNonNull;
 public class TrinoConnector implements Connector {
 
     @Override
-    public void shutdown() {}
+    public void shutdown() {
+        try { catalog.close(); }
+        catch (Exception e) { throw new RuntimeException("Failed to close Paimon catalog", e); }
+    }
+    private final org.apache.paimon.trino.catalog.TrinoCatalog catalog;
     private final ConnectorMetadata trinoMetadata;
     private final ConnectorSplitManager trinoSplitManager;
     private final ConnectorPageSourceProvider trinoPageSourceProvider;
@@ -65,7 +69,9 @@ public class TrinoConnector implements Connector {
             TrinoTableOptions trinoTableOptions,
             TrinoSessionProperties trinoSessionProperties,
             Set<ConnectorTableFunction> tableFunctions,
-            FunctionProvider functionProvider) {
+            FunctionProvider functionProvider,
+            org.apache.paimon.trino.catalog.TrinoCatalog catalog) {
+        this.catalog = requireNonNull(catalog, "catalog is null");
         this.trinoMetadata = requireNonNull(trinoMetadata, "trinoMetadata is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "trinoSplitManager is null");
         this.trinoPageSourceProvider =

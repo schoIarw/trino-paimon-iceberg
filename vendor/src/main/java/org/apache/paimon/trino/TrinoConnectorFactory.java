@@ -84,6 +84,21 @@ public class TrinoConnectorFactory implements ConnectorFactory {
             ConnectorContext context,
             Module module) {
         config = new HashMap<>(config);
+        if (Boolean.parseBoolean(config.getOrDefault("fs.cache.enabled", "false"))) {
+            throw new IllegalArgumentException("Native-cache branch: fs.cache.enabled must be false; use local-cache.*");
+        }
+        if (Boolean.parseBoolean(config.getOrDefault("local-cache.enabled", "false"))) {
+            org.apache.paimon.options.Options nativeOptions = new org.apache.paimon.options.Options(config);
+            org.apache.paimon.options.MemorySize limit = nativeOptions.get(
+                    org.apache.paimon.options.CatalogOptions.LOCAL_CACHE_MAX_SIZE);
+            long blockSize = nativeOptions.get(
+                    org.apache.paimon.options.CatalogOptions.LOCAL_CACHE_BLOCK_SIZE).getBytes();
+            if (limit == null || limit.getBytes() <= 0 || blockSize <= 0
+                    || blockSize > Integer.MAX_VALUE || limit.getBytes() < blockSize) {
+                throw new IllegalArgumentException("Set positive local-cache.max-size >= local-cache.block-size (block <= 2GiB-1)");
+            }
+        }
+
         for (String legacy : Set.of("fs.cache.directories", "fs.cache.max-sizes",
                 "fs.cache.max-disk-usage-percentages", "fs.cache.ttl", "fs.cache.page-size",
                 "fs.cache.preferred-hosts-count")) {
@@ -164,7 +179,7 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                     trinoTableOptions,
                     trinoSessionProperties,
                     connectorTableFunctions,
-                    functionProvider);
+                    functionProvider, trinoMetadata.catalog());
         }
     }
 

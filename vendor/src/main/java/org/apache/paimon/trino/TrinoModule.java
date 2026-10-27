@@ -19,8 +19,6 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.options.Options;
-import org.apache.paimon.trino.cache.PaimonCacheKeyProvider;
-import io.trino.filesystem.cache.CacheKeyProvider;
 import org.apache.paimon.trino.functions.TrinoFunctionProvider;
 import org.apache.paimon.trino.functions.tablechanges.TableChangesFunctionProcessorProvider;
 import org.apache.paimon.trino.functions.tablechanges.TableChangesFunctionProvider;
@@ -35,7 +33,6 @@ import java.util.Map;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 
 /** Module for binding instance. */
 public class TrinoModule implements Module {
@@ -47,8 +44,6 @@ public class TrinoModule implements Module {
 
     @Override
     public void configure(Binder binder) {
-        newOptionalBinder(binder, CacheKeyProvider.class).setBinding()
-                .to(PaimonCacheKeyProvider.class).in(SINGLETON);
         binder.bind(Options.class).toInstance(new Options(config));
         binder.bind(TrinoMetadataFactory.class).in(SINGLETON);
         binder.bind(TrinoSplitManager.class).in(SINGLETON);

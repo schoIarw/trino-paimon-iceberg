@@ -15,4 +15,4 @@ lsblk -o NAME,TYPE,SIZE,ROTA,MOUNTPOINT
 docker run --rm --network none --entrypoint /opt/java/bin/java "$IMAGE_NAME" -version
 docker run --rm --network none --entrypoint /bin/bash \
   -v "$CACHE_DIR:/data/cache:Z" -v "$DATA_DIR:/data/trino:Z" "$IMAGE_NAME" \
-  -ec 'test -w /data/cache && test -w /data/trino && mkdir -p /data/trino/tmp /data/cache/paimon'
+  -ec 'test -w /data/cache && test -w /data/trino && mkdir -p /data/trino/tmp /data/cache/paimon-native'

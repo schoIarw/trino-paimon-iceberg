@@ -10,7 +10,6 @@ ARTIFACTS={
  'trino-core.tar.gz':'https://github.com/trinodb/trino/releases/download/484/trino-server-core-484.tar.gz',
  'trino-jmx.zip':'https://github.com/trinodb/trino/releases/download/484/trino-jmx-484.zip',
  'trino-cli.jar':'https://github.com/trinodb/trino/releases/download/484/trino-cli-484',
- 'trino-blob-cache-alluxio.zip':'https://github.com/trinodb/trino/releases/download/484/trino-blob-cache-alluxio-484.zip',
  'trino-iceberg.zip':'https://github.com/trinodb/trino/releases/download/484/trino-iceberg-484.zip'}
 
 def digest(path):
@@ -57,14 +56,8 @@ def main():
         if any('..' in Path(n).parts or n.startswith('/') for n in z.namelist()):raise RuntimeError('Unsafe ZIP')
         z.extractall(work/'jmx')
     shutil.copytree(work/'jmx/trino-jmx-484',root/'opt/trino/plugin/jmx')
-    with zipfile.ZipFile(d/'trino-blob-cache-alluxio.zip') as z:
-        if any('..' in Path(n).parts or n.startswith('/') for n in z.namelist()):raise RuntimeError('Unsafe cache ZIP')
-        z.extractall(work/'alluxio')
-    cache_dir=root/'opt/trino/plugin/blob-cache-alluxio'
-    if not cache_dir.exists():
-        shutil.copytree(work/'alluxio/trino-blob-cache-alluxio-484',cache_dir)
-    if not (cache_dir/'trino-blob-cache-alluxio-484.jar').is_file():
-        raise RuntimeError('Alluxio cache plugin JAR missing')
+    for candidate in (root/'opt/trino/plugin').glob('*alluxio*'):
+        shutil.rmtree(candidate)
     with zipfile.ZipFile(d/'trino-iceberg.zip') as z:
         if any('..' in Path(n).parts or n.startswith('/') for n in z.namelist()):raise RuntimeError('Unsafe Iceberg ZIP')
         z.extractall(work/'iceberg')
@@ -76,8 +69,8 @@ def main():
     (root/'opt/bin').mkdir(parents=True)
     for name in ['entrypoint.sh','healthcheck.sh']:
         shutil.copy2(ROOT/'docker'/name,root/'opt/bin'/name);(root/'opt/bin'/name).chmod(0o755)
-    for name in ['data/trino/tmp','data/trino/local/warehouse','data/cache/paimon']:(root/name).mkdir(parents=True)
-    (root/'opt/build-info.json').write_text(json.dumps({'trino':'484','paimon':'2.1.0','iceberg_plugin':'484','java':'25.0.4+7','patch':'ai-cache-0.3.0','connector_sha256':digest(plugin),'inputs':lock},indent=2)+'\n')
+    for name in ['data/trino/tmp','data/trino/local/warehouse','data/cache/paimon-native']:(root/name).mkdir(parents=True)
+    (root/'opt/build-info.json').write_text(json.dumps({'trino':'484','paimon':'2.1.0','iceberg_plugin':'484','java':'25.0.4+7','patch':'ai-cache-0.4.0-native','connector_sha256':digest(plugin),'inputs':lock},indent=2)+'\n')
     layer=work/'layer.tar'
     def normal(m):m.uid=m.gid=1000;m.uname=m.gname='';m.mtime=0;return m
     with tarfile.open(layer,'w') as t:
@@ -95,17 +88,17 @@ def main():
     compressed=work/'layer.tar.gz'
     with open(layer,'rb') as src,gzip.open(compressed,'wb',compresslevel=1) as dst:shutil.copyfileobj(src,dst)
     config['created']='2026-10-22T00:00:00Z';config.setdefault('history',[]).append({'created':config['created'],'created_by':'trino-paimon-iceberg package-image.py'})
-    config['config']={'User':'1000:1000','WorkingDir':'/opt/trino','Env':['JAVA_HOME=/opt/java','PATH=/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin','LANG=C.UTF-8','CACHE_ENABLED=false'],'Entrypoint':['/opt/bin/entrypoint.sh'],'Cmd':[],'ExposedPorts':{'8080/tcp':{}},'StopSignal':'SIGTERM','Healthcheck':{'Test':['CMD','/opt/bin/healthcheck.sh'],'Interval':30000000000,'Timeout':5000000000,'StartPeriod':120000000000,'Retries':5},'Labels':{'org.opencontainers.image.title':'trino-paimon-iceberg','org.opencontainers.image.version':'0.3.0'}}
+    config['config']={'User':'1000:1000','WorkingDir':'/opt/trino','Env':['JAVA_HOME=/opt/java','PATH=/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin','LANG=C.UTF-8','PAIMON_LOCAL_CACHE_ENABLED=false'],'Entrypoint':['/opt/bin/entrypoint.sh'],'Cmd':[],'ExposedPorts':{'8080/tcp':{}},'StopSignal':'SIGTERM','Healthcheck':{'Test':['CMD','/opt/bin/healthcheck.sh'],'Interval':30000000000,'Timeout':5000000000,'StartPeriod':120000000000,'Retries':5},'Labels':{'org.opencontainers.image.title':'trino-paimon-iceberg','org.opencontainers.image.version':'0.4.0-native'}}
     config.pop('container_config',None);config.pop('container',None)
     raw=json.dumps(config,separators=(',',':')).encode();image_id=hashlib.sha256(raw).hexdigest();config_name=image_id+'.json';layer_name=layer_hash+'.tar.gz'
-    manifest=[{'Config':config_name,'RepoTags':['trino-paimon-iceberg:0.3.0-arm64'],'Layers':old['Layers']+[layer_name]}]
-    out=ROOT/'dist';out.mkdir(exist_ok=True);target=out/'trino-paimon-iceberg-0.3.0-arm64.docker.tar.gz'
+    manifest=[{'Config':config_name,'RepoTags':['trino-paimon-iceberg:0.4.0-native-arm64'],'Layers':old['Layers']+[layer_name]}]
+    out=ROOT/'dist';out.mkdir(exist_ok=True);target=out/'trino-paimon-iceberg-0.4.0-native-arm64.docker.tar.gz'
     with tarfile.open(target,'w:gz',compresslevel=1) as t,tarfile.open(base) as b:
         for name in old['Layers']:t.addfile(b.getmember(name),b.extractfile(name))
         t.add(compressed,arcname=layer_name);add_bytes(t,config_name,raw);add_bytes(t,'manifest.json',json.dumps(manifest).encode())
     (out/'SHA256SUMS').write_text(digest(target)+'  '+target.name+'\n');(out/'IMAGE_ID').write_text('sha256:'+image_id+'\n')
     (out/'ROOTFS_PATH').write_text(str(root)+'\n')
-    (work/'Dockerfile').write_text('FROM '+BASE+'\nCOPY --chown=1000:1000 rootfs/ /\nENV JAVA_HOME=/opt/java LANG=C.UTF-8 CACHE_ENABLED=false\nENV PATH=/opt/java/bin:$PATH\nUSER 1000:1000\nWORKDIR /opt/trino\nEXPOSE 8080\nHEALTHCHECK --interval=30s --timeout=5s --start-period=120s CMD ["/opt/bin/healthcheck.sh"]\nENTRYPOINT ["/opt/bin/entrypoint.sh"]\n')
+    (work/'Dockerfile').write_text('FROM '+BASE+'\nCOPY --chown=1000:1000 rootfs/ /\nENV JAVA_HOME=/opt/java LANG=C.UTF-8 PAIMON_LOCAL_CACHE_ENABLED=false\nENV PATH=/opt/java/bin:$PATH\nUSER 1000:1000\nWORKDIR /opt/trino\nEXPOSE 8080\nHEALTHCHECK --interval=30s --timeout=5s --start-period=120s CMD ["/opt/bin/healthcheck.sh"]\nENTRYPOINT ["/opt/bin/entrypoint.sh"]\n')
     print(target,flush=True)
     print('Docker alternative context:',work,flush=True)
 
