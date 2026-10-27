@@ -45,7 +45,7 @@ class Proxy(http.server.BaseHTTPRequestHandler):
             response = conn.getresponse()
             data = response.read()
             path = urllib.parse.urlsplit(self.path).path
-            if self.command == 'GET' and response.status == 200 and '/bucket-' in path:
+            if self.command == 'GET' and response.status in (200, 206) and '/bucket-' in path:
                 with lock:
                     counts['data_gets'] += 1
                     counts['data_bytes'] += len(data)
